@@ -54,7 +54,7 @@ for i in 1:nprocs
 end
 
 machines=readdlm("/home/anegi/complist/available_complist.txt",' ') #list of available computers on the THP NETWORK by running cinit.sh
-#machines = ["l15", "l16", "l18", "l21", "l25", "l26", "l28", "l30", "l33", "l37", "l38", "l39", "l40",  "l48", "l49", "l51", "l54", "l59", "l60", "l64", "l65", "l66", "l67", "l69", "l71", "l74", "l75", "l76", "l80", "l84", "l86", "l88", "l90", "l92", "l93", "l96", "l98", "l101"]
+
 distribute_jobs(nprocs, machines)
 println("Started ",nworkers()," workers\n")
 

@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 echo -e "Hello!!This program will run MyLyapunovProject for you.\nEnter the name of  I/O directory for your job."

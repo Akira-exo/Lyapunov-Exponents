@@ -1,0 +1,44 @@
+#!/bin/bash
+#
+#   Invoke as cinit.sh FROM ANYWHERE
+#   IN_FILENAME  is a list of integers denoting the numbers of the remote hosts on the THP network.
+#   OUT_FILENAME is stored in the given output file as a list which can be directly imported in Julia
+#
+
+username=$(whoami)
+IN_FILENAME="/home/anegi/complist/full_complist.txt"
+OUT_FILENAME="/home/anegi/complist/available_complist.txt"
+# Shuffle the list of computers before reading them
+cat $IN_FILENAME | shuf > templist 
+readarray -t comps < templist
+rm templist 
+
+echo -n "Checking available CPUs..."
+echo -n "" > $OUT_FILENAME
+len=$((${#comps[@]}-1))   # Number of computers in the input file 
+cnum=0
+
+for i in $(seq 0 $len)
+do
+  comp=l${comps[$i]/ /}
+  hostname=$username'@'$comp'.thp.uni-koeln.de'
+
+  # Returns the CPU usage of the remote system 
+  cmd="ps -A -o pcpu | tail -n+2 | paste -sd+ | bc"
+  usage="$(timeout 1s ssh -q -o StrictHostKeyChecking=no $hostname $cmd)"
+
+  if [ $? -eq 124 ]   # if ssh timed out 
+  then
+    continue
+  fi
+
+  chkusage=$(echo "$usage<300.0" | bc )
+  if [ $chkusage -eq 1 ]   # if CPU usage is over 300%
+  then
+	echo -e $comp >> $OUT_FILENAME
+  	((cnum ++))
+  fi
+done
+
+echo "Done"
+echo "Wrote list of "$cnum" available CPUs to" $OUT_FILENAME

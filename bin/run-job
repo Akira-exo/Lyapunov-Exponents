@@ -1,0 +1,52 @@
+
+#!/bin/bash
+
+echo -e "Hello!!This program will run MyLyapunovProject for you.\nEnter the name of  I/O directory for your job."
+read where
+cd $where
+echo "Wanna make m_list? (y/n)"
+read ans
+if [ "$ans" == 'y' ]
+   then
+     echo "Enter inputs"
+     read start1 stop1  steps1
+     julia /home/anegi/August/MyLyapunovProject/ssh/make_m.jl $start1 $stop1 $steps1
+     echo m_list CREATED!
+fi
+
+echo "Wanna make W_list? (y/n)"
+read ans
+if [ "$ans"  == 'y' ]
+   then
+     echo "Enter inputs"
+     read start2 stop2  steps2
+     julia /home/anegi/August/MyLyapunovProject/ssh/make_W.jl $start2 $stop2 $steps2
+     echo W_list CREATED!
+fi 
+ 
+echo "Wanna make Ly_list? (y/n)"
+read ans
+if [ "$ans" == 'y' ]
+   then
+   echo -n "">Ly_list.txt
+   echo "Enter Ly list. [^D] to end."
+   while IFS= read -r line
+   do
+     echo -e "$line">>Ly_list.txt
+    done  
+    echo Ly_list CREATED!
+fi 
+ 
+echo "Should I update the available computer list? (y/n)"
+read ans
+if [ "$ans" == 'y' ]
+   then
+   /home/anegi/complist/cinit
+fi
+
+echo "Proceed with running the job on ssh? (y/n)?"
+read ans
+if [ "$ans" == 'y' ]
+    then
+     julia --project="/home/anegi/August/MyLyapunovProject/ssh/" /home/anegi/August/MyLyapunovProject/ssh/main.jl
+fi

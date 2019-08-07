@@ -1,33 +1,6 @@
 
 
-#=
-
-Function to call worker 'i' to perform the Task with # or ID 'i'
-
-=#
-
-@everywhere function perform_Task(m::Float64,W::Float64,Ly_list::Array{Int64},jobID::Int64,dir_name::String)
-
-	#-----------------------
-
-        #NOTE: WORKER'S ID = myid()
-
-        
-        println("starting my job $(jobID) at $(gethostname()) on time $(now()) ")
-
-        #SYSTEM PARAMETERS: 
-        J_x,J_y,M,ϵ,p,scale,q = get_SystemParameters()
-
-	𝐌= assign_M(M,J_y,Ly,p)
-	𝐉,𝐕,𝚵,𝐖t=assign_J(J_x,Ly)
-
-	calc_LyapunovList(𝐌,𝐕,𝚵,𝐖t,ϵ,Ly_list,scale,W,dir_name,q,jobID)
-        println("finishing my job $(jobID) at $(gethostname()) on time $(now()) ")
-
-
-end
-
-@everywhere function get_SystemParamaters()
+@everywhere function get_SystemParameters()
 	
 	σ_x= [0 1;1 0]
 	σ_y= [0 -1im; 1im 0 ]	

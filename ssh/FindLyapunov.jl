@@ -34,10 +34,10 @@ such that:
     v=F.U[:,1]
     w=F.V[:,1]
     
-            𝚵=𝐈
-           𝐕=kron(𝐈,v)
-           𝐖t=kron(𝐈,w')
-           𝐉=kron(𝐈,J_x)
+    𝚵=𝐈
+    𝐕=kron(𝐈,v)
+    𝐖t=kron(𝐈,w')
+    𝐉=kron(𝐈,J_x)
     
     return(𝐉,𝐕,𝚵,𝐖t)   
 
@@ -58,18 +58,18 @@ given that there are Ly sites in the supercell and
 
 @everywhere function assign_M(M::Array{Float64,2},J_y::Array{Complex{Float64},2},Ly::Int64,p::Int64)
    
-                    𝐌=Array{Complex{Float64},2}
-                     𝐈=Diagonal(ones(Ly))
+       𝐌=Array{Complex{Float64},2}
+       𝐈=Diagonal(ones(Ly))
     	
-                     𝐈_up= diagm(1 => ones(Ly-1))
-                     𝐈_down= diagm(-1 => ones(Ly-1))
+       𝐈_up= diagm(1 => ones(Ly-1))
+       𝐈_down= diagm(-1 => ones(Ly-1))
     
-                    𝐌= kron(𝐈,M)+ kron(𝐈_up,J_y')+kron(𝐈_down,J_y)
+       𝐌= kron(𝐈,M)+ kron(𝐈_up,J_y')+kron(𝐈_down,J_y)
    
        if(p==1) #pbc=ON
-                              𝐈_PBCup = diagm((Ly-1) => ones(1))
-                              𝐈_PBCdown = diagm(-(Ly-1) => ones(1))
-                             𝐌+=kron(𝐈_PBCup,J_y)+kron(𝐈_PBCdown,J_y')
+              𝐈_PBCup = diagm((Ly-1) => ones(1))
+              𝐈_PBCdown = diagm(-(Ly-1) => ones(1))
+              𝐌+=kron(𝐈_PBCup,J_y)+kron(𝐈_PBCdown,J_y')
        end
        return(𝐌)
 end
@@ -99,9 +99,9 @@ Function to calculate and return the propogator/Green's function 𝐆 at energy 
 =#
 @everywhere function calculate_G(𝐌::Array{Complex{Float64},2},ϵ::Float64) 
     
-             𝐈=Diagonal(ones(size(𝐌,1)))
-             𝐆=(ϵ*𝐈-𝐌)\𝐈
-     return(𝐆)
+    𝐈=Diagonal(ones(size(𝐌,1)))
+    𝐆=(ϵ*𝐈-𝐌)\𝐈
+    return(𝐆)
 end
 
 
@@ -142,8 +142,8 @@ last value of Q:: Array{Float64,1}
     
      r=size(𝚵,1)
     
-             𝐈=Diagonal(ones(r)) #Identity matrix of size: r X r
-             𝐎=Diagonal(zeros(r)) # Zero matrix of size: r x r
+     𝐈=Diagonal(ones(r)) #Identity matrix of size: r X r
+     𝐎=Diagonal(zeros(r)) # Zero matrix of size: r x r
      
      #initialize
      T_x=Diagonal(ones(2*r))

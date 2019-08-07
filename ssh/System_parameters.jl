@@ -1,6 +1,6 @@
 
 
-@everywhere function get_SystemParameters()
+@everywhere function get_SystemParameters(m)
 	
 	σ_x= [0 1;1 0]
 	σ_y= [0 -1im; 1im 0 ]	

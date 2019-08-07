@@ -2,28 +2,17 @@
 #----------------------------------------INTRODUCTION--------------------------------------------------------------------
 # main.jl takes no arguments from the terminal
 #ARGS is the array that stores the arguments passed to the julia program (as STRINGs, hence they need to be parsed as Int)
+# (TIP: REMEMBER TO ADD LIBRARIES WHICH ARE BEING IMPORTED IN THE PROGRAM TO A NEW ENVIRONMENT AND GET THE PROJECT.TOML FILE !!!)
 #-------------------------------------------------------------------------------------------------------------
 
 
-#----------------------------------------IMPORT REQUIRED LIBRARIES----------------------------------------------------------------
-# (TIP: REMEMBER TO ADD ALL THESE LIBRARIES WHICH ARE BEING IMPORTED TO A NEW ENVIRONMENT AND GET THE PROJECT.TOML FILE !!!)
+#----------------------------------------IMPORT LIBRARIES REQUIRED BY MASTER----------------------------------------------------------------
+
 
 using Distributed, ClusterManagers,DelimitedFiles,LinearAlgebra
-@everywhere pushfirst!(Base.DEPOT_PATH, "/tmp/test.cache") #important!
-@everywhere using Dates    
-@everywhere using LinearAlgebra
-@everywhere using DelimitedFiles
-@everywhere using Statistics
-@everywhere using Distributions
 
-#---------------------------------IMPORT REQUIRED FUNCTIONALITY-----------------------------------------------------------------
-dir_name= string(pwd())  #I/O directory= current working directory
 
-include("FindLyapunov.jl") #from the project directory where main.jl is
-#include("System_parameters.jl")  #from the project directory where main.jl is
-include(string(dir_name,"/System_parameters.jl")) # from the I/O directory
-
-#-----------------------------------------DEFINE FUNCTIONS--------------------------------------------------------------------------------------
+#-----------------------------------------DEFINE MASTER FUNCTIONS--------------------------------------------------------------------------------------
 
 #=
 Function to distribute 'nprocs' jobs to 'machines'
@@ -36,7 +25,7 @@ for i in 1:nprocs
      j=1
     end
    params = (exename=`nice -19 /vol/thp/share/julia-1.0.0-x86_64/bin/julia `, dir= dir_name )
-   addprocs([(machines[j], 1)]; params...)
+   addprocs([(machines[j], 1)]; params...) #NOTE: SSH Manager is automatically called when you call addprocs() with an array
    j=j+1
  end
 
@@ -44,7 +33,7 @@ end
 
 
 #=
-Function to map each job information to its respective machine
+Function to map each job information to its respective machine.
 =#
 
 function map_jobs(nprocs,m_list,W_list)
@@ -69,6 +58,55 @@ function map_jobs(nprocs,m_list,W_list)
 
 end
 
+
+#-------------------------------------------READ INPUTS------------------------------------------------------------------------
+
+dir_name= string(pwd())  #I/O directory= current working directory
+
+println(string("THE INPUT/OUTPUT directory is ",dir_name))
+
+m_list = readdlm(string(dir_name,"/m_list.txt"),' ')
+W_list = readdlm(string(dir_name,"/W_list.txt"),' ')
+Ly_list = Int64.(readdlm(string(dir_name,"/Ly_list.txt"),' '))
+
+
+#---------------------------------------LIST AVAILABLE MACHINES-----------------------------------------------------------------
+
+machines=readdlm("/home/anegi/complist/available_complist.txt",' ') #list of available computers on the THP NETWORK by running cinit.sh
+
+#------------------------------------- START WORKERS and DISTRIBUTE JOBS TO THEM--------------------------------------------------
+
+nprocs= length(m_list)*length(W_list) # one (m,W) per worker
+
+println("starting ", nprocs, " processes...")
+println("one (m,W) per worker")
+println("on THP CLUSTER :o !!")
+
+distribute_jobs(nprocs, machines) #workers born
+
+println("Started ",nworkers()," workers\n")
+println("Done.\n")
+
+#----------------------------------------- MAP JOBS TO WORKERS ----------------------------------------------------------------------
+
+
+map= map_jobs(nprocs,m_list,W_list)
+
+#---------------------------------IMPORT FUNCTIONALITY REQUIRED @everywhere-----------------------------------------------------------------
+
+@everywhere pushfirst!(Base.DEPOT_PATH, "/tmp/test.cache") #important!
+@everywhere using Dates    
+@everywhere using LinearAlgebra
+@everywhere using DelimitedFiles
+@everywhere using Statistics
+@everywhere using Distributions
+
+include("FindLyapunov.jl") #from the project directory where main.jl is
+#include("System_parameters.jl")  #from the project directory where main.jl is
+include(string(dir_name,"/System_parameters.jl")) # from the I/O directory
+
+
+#-----------------------------------------DEFINE @everywhere FUNCTIONS--------------------------------------------------------------------------------------
 #=
 Function to call worker 'i' to perform the job with jobID 'i' each job = one (m,W)
 =#
@@ -95,35 +133,11 @@ Function to call worker 'i' to perform the job with jobID 'i' each job = one (m,
 
 
 end
-#-------------------------------------------READING INPUTS------------------------------------------------------------------------
-println(string("THE INPUT/OUTPUT directory is ",dir_name))
-
-m_list = readdlm(string(dir_name,"/m_list.txt"),' ')
-W_list = readdlm(string(dir_name,"/W_list.txt"),' ')
-Ly_list = Int64.(readdlm(string(dir_name,"/Ly_list.txt"),' '))
 
 
-#---------------------------------------IMPORT CLUSTER STATUS-----------------------------------------------------------------
-
-machines=readdlm("/home/anegi/complist/available_complist.txt",' ') #list of available computers on the THP NETWORK by running cinit.sh
-nprocs= length(m_list)*length(W_list) # one (m,W) per worker
-println("starting ", nprocs, " processes...")
-println("one (m,W) per worker")
-println("on THP CLUSTER :O!!")
-
-#------------------------------------- SET UP WORKERS/PROCESSES--------------------------------------------------
-distribute_jobs(nprocs, machines)
-println("Started ",nworkers()," workers\n")
-println("Done.\n")
-
-#SSH Manager is automatically called when you call addprocs() with an array
-
-#--------------------------------------MAP tasks to workers-----------------------------------------------------------------------
-map= map_jobs(nprocs,m_list,W_list)
-#-----------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-#--------------------------------------DO TASK!!!!!!------------------------------------------------------------------------------
+#--------------------------------------DO JOBS!!!!!!------------------------------------------------------------------------------
 
 #creating directories for outputs
 mkdir(string(dir_name,"/λ_list"))

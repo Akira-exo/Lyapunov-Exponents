@@ -115,25 +115,24 @@ with (x,y) dimensions = (Nx,Ly)
 
 -----------------------------------------------------------------------------------------------------------------------
 Inputs: 
-                           𝐌 :: Array{Float64},2},Array{Complex{Float64},2} ::On site (clean) matrix of a supercell
-           𝐕,𝚵,𝐖t :: Array{Float64},2},Array{Complex{Float64},2}::SVD OF 𝐉
+         𝐌 :: Array{Float64},2},Array{Complex{Float64},2} ::On site (clean) matrix of a supercell
+     𝐕,𝚵,𝐖t:: Array{Float64},2},Array{Complex{Float64},2} ::SVD OF 𝐉
          Ly :: Int64                                       ::Number of sites in a supercell (transverse length of the system)
          Nx :: Int64                                       ::Number of supercells (longitudinal length of the system) 
          Wd :: Float64                                     ::Disorder Strength
-   dir_name :: String                                      ::Directory to store the Lyapunov spectrum file, usually the current working directory (each file is refered to by its jobID )
           q :: Int64                                       ::Number of QR decomposition steps to skip
-       jobID:: Int64                                       ::ID corresponding to each job. Here 1 job corresponds to 1 (m,W,Ly) set
+
 ------------------------------------------------------------------------------------------------------------------------ 
-Outputs: doesn't return anything
+Outputs: returns
    
-  λ_list :: Array{Float64,1}                            ::[ λ_1, λ_2,...λ_2r]  in descending order     
-  last value of R :: Array{Float64,1}                            ::[ λ_1, λ_2,...λ_2r]  in descending order   
+       λ_list :: Array{Float64,1}                           ::[ λ_1, λ_2,...λ_2r]  in descending order     
+last value of Q:: Array{Float64,1}                      
 -------------------------------------------------------------------------------------------------------------------------  
 
 
 =#
 
-@everywhere function calc_LyapunovList(𝐌,𝐕,𝚵,𝐖t,ϵ::Float64,Ly::Int64,Nx::Int64,Wd::Float64,dir_name::String,q::Int64,jobID::Int64)
+@everywhere function get_LyapunovList(𝐌,𝐕,𝚵,𝐖t,ϵ::Float64,Ly::Int64,Nx::Int64,Wd::Float64,q::Int64)
      
  
      #q =size of the blocks of QR
@@ -205,10 +204,8 @@ Outputs: doesn't return anything
         
       end #for
 
-     filename= string(dir_name,"/λ_list/λ(m,W,Ly)=",jobID)
-     writedlm(filename,λ_list, ", ")
-     filename= string(dir_name,"/Q_prev/Q(m,W,Ly)=",jobID)
-     writedlm(filename,Q_prev, ", ")
+
+   return(λ_list,Q_prev)
 
 
 

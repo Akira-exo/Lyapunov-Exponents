@@ -23,7 +23,7 @@ println(string("Currently working in and reading (m,W,L) inputs from ",dir_name)
 
 m_list = readdlm(string(dir_name,"/m_list.txt"),' ')
 W_list = readdlm(string(dir_name,"/W_list.txt"),' ')
-Ly_list = readdlm(string(dir_name,"/Ly_list.txt"),' ')
+Ly_list = Int.(readdlm(string(dir_name,"/Ly_list.txt"),' '))
 
 
 #---------------------------------------CHECK CLUSTER CAPACITY-----------------------------------------------------------------

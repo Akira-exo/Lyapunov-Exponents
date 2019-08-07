@@ -1,7 +1,7 @@
 
-#----------------------------------------INTRODUCTION----------------------------------------------------------------
+#----------------------------------------INTRODUCTION--------------------------------------------------------------------
 # main.jl takes no arguments from the terminal
-
+#ARGS is the array that stores the arguments passed to the julia program (as STRINGs, hence they need to be parsed as Int)
 #-------------------------------------------------------------------------------------------------------------
 
 
@@ -9,36 +9,24 @@
 # (TIP: REMEMBER TO ADD ALL THESE LIBRARIES WHICH ARE BEING IMPORTED TO A NEW ENVIRONMENT AND GET THE PROJECT.TOML FILE !!!)
 
 using Distributed, ClusterManagers,DelimitedFiles,LinearAlgebra
+@everywhere pushfirst!(Base.DEPOT_PATH, "/tmp/test.cache") #important!
+@everywhere using Dates    
+@everywhere using LinearAlgebra
+@everywhere using DelimitedFiles
+@everywhere using Statistics
+@everywhere using Distributions
 
+#---------------------------------IMPORT REQUIRED FUNCTIONALITY-----------------------------------------------------------------
 
-#system_scale = parse(Int, ARGS[1])
-#ARGS is the array that stores the arguments passed to the julia program (as STRINGs, hence they need to be parsed as Int)
+include("FindLyapunov.jl") #from the project directory where main.jl is
+#include("System_parameters.jl")  #from the project directory where main.jl is
+include(string(dir_name,"/System_parameters.jl")) # from the I/O directory
 
+#-----------------------------------------DEFINE FUNCTIONS--------------------------------------------------------------------------------------
 
-#-------------------------------------------READING INPUTS------------------------------------------------------------------------
-dir_name= string(pwd())  #I/O directory= current working directory
-
-
-println(string("Currently working in and reading (m,W,L) inputs from ",dir_name))
-
-m_list = readdlm(string(dir_name,"/m_list.txt"),' ')
-W_list = readdlm(string(dir_name,"/W_list.txt"),' ')
-Ly_list = Int64.(readdlm(string(dir_name,"/Ly_list.txt"),' '))
-
-
-#---------------------------------------CHECK CLUSTER CAPACITY-----------------------------------------------------------------
-
-machines=readdlm("/home/anegi/complist/available_complist.txt",' ') #list of available computers on the THP NETWORK by running cinit.sh
-nprocs= length(m_list)*length(W_list) # one (m,W) per worker
-
-println("starting ", nprocs, " processes...")
-println("one (m,W) per worker")
-println("on THP CLUSTER :O!!")
-
-#------------------------------------------- SET UP WORKERS/PROCESSES--------------------------------------------------
-
-#------------------------------------------distribute processes over the computers------------------------------------
-
+#=
+Function to distribute 'nprocs' jobs to 'machines'
+=#
 
 function distribute_jobs(nprocs, machines)
 j=1
@@ -54,18 +42,9 @@ for i in 1:nprocs
 end
 
 
-distribute_jobs(nprocs, machines)
-println("Started ",nworkers()," workers\n")
-println("Done.\n")
-
-#SSH Manager is automatically called when you call addprocs() with an array
-
-
-
-
-#--------------------------------------MAP tasks to workers-----------------------------------------------------------------------
-
-
+#=
+Function to map each job information to its respective machine
+=#
 
 function map_jobs(nprocs,m_list,W_list)
 
@@ -90,44 +69,77 @@ function map_jobs(nprocs,m_list,W_list)
 
 end
 
+#=
+Function to call worker 'i' to perform the job with jobID 'i' each job = one (m,W)
+=#
 
+@everywhere function perform_job(m::Float64,W::Float64,Ly_list::Array{Int64},jobID::Int64,dir_name::String)
+
+        #NOTE: WORKER'S ID = myid()
+
+        println("starting my job $(jobID) at $(gethostname()) on time $(now()) ")
+
+        #SYSTEM PARAMETERS: 
+        J_x,J_y,M,ϵ,p,scale,q = get_SystemParameters()
+
+	𝐌= assign_M(M,J_y,Ly,p)
+	𝐉,𝐕,𝚵,𝐖t=assign_J(J_x,Ly)
+
+	calc_LyapunovList(𝐌,𝐕,𝚵,𝐖t,ϵ,Ly_list,scale,W,dir_name,q,jobID)
+   println("finishing my job $(jobID) at $(gethostname()) on time $(now()) ")
+
+
+end
+#-------------------------------------------READING INPUTS------------------------------------------------------------------------
+
+
+
+dir_name= string(pwd())  #I/O directory= current working directory
+
+println(string("THE INPUT/OUTPUT directory is ",dir_name))
+
+m_list = readdlm(string(dir_name,"/m_list.txt"),' ')
+W_list = readdlm(string(dir_name,"/W_list.txt"),' ')
+Ly_list = Int64.(readdlm(string(dir_name,"/Ly_list.txt"),' '))
+
+
+#---------------------------------------IMPORT CLUSTER STATUS-----------------------------------------------------------------
+
+machines=readdlm("/home/anegi/complist/available_complist.txt",' ') #list of available computers on the THP NETWORK by running cinit.sh
+nprocs= length(m_list)*length(W_list) # one (m,W) per worker
+println("starting ", nprocs, " processes...")
+println("one (m,W) per worker")
+println("on THP CLUSTER :O!!")
+
+#------------------------------------- SET UP WORKERS/PROCESSES--------------------------------------------------
+distribute_jobs(nprocs, machines)
+println("Started ",nworkers()," workers\n")
+println("Done.\n")
+
+#SSH Manager is automatically called when you call addprocs() with an array
+
+#--------------------------------------MAP tasks to workers-----------------------------------------------------------------------
 map= map_jobs(nprocs,m_list,W_list)
+#-----------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-#-------------------------------------------------------------------------IMPORT REQUIRED FUNCTIONALITY-----------------------------------------------------------------
+#--------------------------------------DO TASK!!!!!!------------------------------------------------------------------------------
 
-include("FindLyapunov.jl") #from the project directory where main.jl is
-#include("System_parameters.jl")  #from the project directory where main.jl is
-include(string(dir_name,"/System_parameters.jl")) # from the I/O directory
-
-@everywhere pushfirst!(Base.DEPOT_PATH, "/tmp/test.cache") #important!
-@everywhere using Dates    
-@everywhere using LinearAlgebra
-@everywhere using DelimitedFiles
-@everywhere using Statistics
-@everywhere using Distributions
+#creating directories for outputs
 mkdir(string(dir_name,"/λ_list"))
 mkdir(string(dir_name,"/Q_prev"))
 
 
-#-----------------------------------------------------------------------------------------------------------------------------------------------------
 
-#--------------------------------------DO TASK!!!!!!------------------------------------------------------------------------------
-
-
-
-
-
-
-@sync for i in workers() #@sync synchronises the output 
+@sync for i in workers() 
       
-     # host, pid = fetch(@spawnat i (gethostname(), getpid()))
+      #host, pid = fetch(@spawnat i (gethostname(), getpid()))
       #println("I'm worker $i running on host $host with pid $pid at time $(now())")
       m=map[i-1,3]
       W=map[i-1,4]
-      # println("My (m,W,Ly) is (",m,", ",W,", ",Ly,")")
+      # println("My (m,W) is (",m,", ",W,")")
 
-      @async @spawnat i perform_Task(m,W,Ly_list,i,dir_name) 
+      @async @spawnat i perform_job(m,W,Ly_list,i,dir_name) 
 
 end
 println("JOB COMPLETE! Congratulations!!")

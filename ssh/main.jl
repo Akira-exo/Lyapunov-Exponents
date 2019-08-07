@@ -17,6 +17,7 @@ using Distributed, ClusterManagers,DelimitedFiles,LinearAlgebra
 @everywhere using Distributions
 
 #---------------------------------IMPORT REQUIRED FUNCTIONALITY-----------------------------------------------------------------
+dir_name= string(pwd())  #I/O directory= current working directory
 
 include("FindLyapunov.jl") #from the project directory where main.jl is
 #include("System_parameters.jl")  #from the project directory where main.jl is
@@ -48,7 +49,7 @@ Function to map each job information to its respective machine
 
 function map_jobs(nprocs,m_list,W_list)
 
-	  map= zeros(nprocs,4)
+      map= zeros(nprocs,4)
 	
           count=1
           for m in m_list
@@ -62,10 +63,9 @@ function map_jobs(nprocs,m_list,W_list)
           end
           
           filename=string(pwd(),"/TaskID(#,pid,m,W).txt")
-     end
-    
-     writedlm(filename,map)
-     return(map)
+          writedlm(filename,map)
+          
+    return(map)
 
 end
 
@@ -96,11 +96,6 @@ Function to call worker 'i' to perform the job with jobID 'i' each job = one (m,
 
 end
 #-------------------------------------------READING INPUTS------------------------------------------------------------------------
-
-
-
-dir_name= string(pwd())  #I/O directory= current working directory
-
 println(string("THE INPUT/OUTPUT directory is ",dir_name))
 
 m_list = readdlm(string(dir_name,"/m_list.txt"),' ')

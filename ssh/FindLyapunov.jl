@@ -159,14 +159,15 @@ last value of Q:: Array{Float64,1}
             #1. Add disorder to each site in the supercell and calculate the green's function 𝐆
         
               disordered_𝐌=add_Disorder(Wd,𝐌)
-                                      𝐆=calculate_G(disordered_𝐌,ϵ)  
+              𝐆=calculate_G(disordered_𝐌,ϵ)  
         
             #2. Calculate T_x using 𝐆 and rewriting the Transfer equation in the SVD basis of 𝐉
         
-                 #𝐕'=𝐕t ;𝐕 and 𝐕t are Hermitian conjugates.
-                 #𝐖t'=𝐖 ;𝐖 and 𝐖t are Hermitian conjugates.
-                                    𝐀=[𝐕'*𝐆*𝐕*𝚵  -𝐈 ; 𝐖t*𝐆*𝐕*𝚵 𝐎]
-                                    𝐁=[𝐎 𝐕'*𝐆*𝐖t'*𝚵 ; -𝐈 𝐖t*𝐆*𝐖t'*𝚵]
+              #𝐕'=𝐕t ;𝐕 and 𝐕t are Hermitian conjugates.
+              #𝐖t'=𝐖 ;𝐖 and 𝐖t are Hermitian conjugates.
+      
+              𝐀=[𝐕'*𝐆*𝐕*𝚵  -𝐈 ; 𝐖t*𝐆*𝐕*𝚵 𝐎]
+              𝐁=[𝐎 𝐕'*𝐆*𝐖t'*𝚵 ; -𝐈 𝐖t*𝐆*𝐖t'*𝚵]
          
                 #NOTE: 𝐀, 𝐁 are sparse arrays and needs to be converted to a matrix before computing T_x= A^(-1)*B
        
